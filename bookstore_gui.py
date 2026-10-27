@@ -16,6 +16,11 @@ class UserInterface:
         self._customers = [] #creating a list and naming it customers to store each creaated customer
         self._stocks = [] #creating a list and naming it stocks to store each creaated book
         self._orders = [] #creating an order list, and naming it Orders
+        self._current_order = None #the order waiting for shipping and an invoice
+        self._current_shipping = None #the shipping record for the current order
+        self.isUrgent = tk.BooleanVar(value=False)
+        self.customer_var = tk.StringVar()
+        self.book_var = tk.StringVar()
 
 
         searchButton = tk.Button(self.root, text="SearchID", command=self.searchBar, font=("Arial", 14), width=15) #creating a search button in the main window to be clicked by the user
@@ -27,7 +32,7 @@ class UserInterface:
         customerAddButton.pack(anchor="center", pady=10) #positioning the lablel in the center of the main window, and using pady to add space above and below 
 
 
-        self.dropDown1 = ttk.Combobox(self.root, textvariable="Select a customer name", state = "readonly") #creating a dropdown in the main window to allow the user to choose a created customer 
+        self.dropDown1 = ttk.Combobox(self.root, textvariable=self.customer_var, state="readonly", width=32) #creating a dropdown in the main window to allow the user to choose a created customer 
         self.dropDown1.pack(anchor="center") #positioning the dropdown in the center of the main window 
 
 
@@ -41,7 +46,7 @@ class UserInterface:
         bookAddButton = tk.Button(self.root, text="Add Book to Stock", command=self.bookInputForm, font=("Arial", 14), height=1, width=15) #creating an add book button to be clicked by the user in the main window, and another window will pop up to add details for adding a book
         bookAddButton.pack(anchor="center", pady=10) #positioning the lablel in the center of the main window, and using pady to add space above and below
 
-        self.dropDown2 = ttk.Combobox(self.root, state = "readonly") #creating a dropdown in the main window to allow the user to choose a created book 
+        self.dropDown2 = ttk.Combobox(self.root, textvariable=self.book_var, state="readonly", width=32) #creating a dropdown in the main window to allow the user to choose a created book 
         self.dropDown2.pack(anchor="center") #positioning the dropdown in the center of the main window 
 
 
@@ -70,7 +75,13 @@ class UserInterface:
         viewAllInvoicesButton = tk.Button(self.root, text="View All Invoices", font=("Arial", 14), width=13, command=self.view_invoices) #creating a button to be clicked by the user in the main window for view all the previously generated invoices   
         viewAllInvoicesButton.pack(anchor="center", pady=5) #positioning the checkbox in the center of the main window, and using pady to add space above and below 
 
-        self.root.mainloop() #running the application
+    def _clear_open_shipment(self):
+        """Drop shipping for an order that has not been invoiced yet."""
+        shipping = self._current_shipping
+        if shipping is not None and shipping._counted_urgent:
+            Shipping.count_urgent -= 1
+            shipping._counted_urgent = False
+        self._current_shipping = None
 
 
 
@@ -78,15 +89,14 @@ class UserInterface:
     creating a window that pops up ontop of the main window to allow the user to place the order
     """
     def shippingOptions(self):
-        self.selectShippingWindow = tk.Toplevel(self.root) #creating a window that pops up ontop of the main window to allow the user to place the order
-        self.selectShippingWindow.title("Place the order") #naming the pop up window Place the order
+        self.selectShippingWindow = tk.Toplevel(self.root) #creating a window that pops up ontop of the main window to choose shipping
+        self.selectShippingWindow.title("Shipping Options")
         """
         assigning the boolean value to the variable isUrgent
         if the value is ticked the value True is going to be assigned to the variable isUrgent
         and if the value is not ticked then the value Fasle is going to be assigned to the variable isUrgent
         """
-        self.isUrgent = tk.BooleanVar() #assigning the boolean value to the variable isUrgent
-        isUrgentCheckbox = tk.Checkbutton(self.selectShippingWindow, text="Is it an Urgent Order?", variable = self.isUrgent) #creating a checkbox for the shipping option to allow the user to tick it or leave it empty 
+        isUrgentCheckbox = tk.Checkbutton(self.selectShippingWindow, text="Is it an Urgent Order?", variable=self.isUrgent) #creating a checkbox for the shipping option to allow the user to tick it or leave it empty 
         isUrgentCheckbox.grid(row=3, column=0) #positioning the checkbox at row 3 and column 0 
 
 
@@ -158,54 +168,24 @@ class UserInterface:
 
      
     def addCustomer(self): 
-        Name = self.nameEntry.get() #getting the entry value of nameEntry and assigning it to the variable Name 
-        Phone = self.phoneEntry.get() #getting the entry value of phoneEntry and assigning it to the variable Phone  
-        Email = self.emailEntry.get() #getting the entry value of emailEntry and assigning it to the variable Email 
+        Name = self.nameEntry.get().strip() #getting the entry value of nameEntry and assigning it to the variable Name 
+        Phone = self.phoneEntry.get().strip() #getting the entry value of phoneEntry and assigning it to the variable Phone  
+        Email = self.emailEntry.get().strip() #getting the entry value of emailEntry and assigning it to the variable Email 
 
-
-        
         try:
-            validNameInputs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ .'-èéüçñabcdefghijklmnopqrstuvwxyz"
-            for letter in Name:
-                if letter not in validNameInputs:
-                    raise ValueError("You can only enter alphabetical letters and some special characters")
-            if not 3 <= len(Name) <= 30:
-                raise ValueError("Please enter a name between 3 and 30 character")
-            if not len(Phone) == 11:
-                raise ValueError("Please enter an 11 digit phone number")
-            if not Phone.startswith("07"):
-                raise ValueError("phoneNumber must start with 07")
-            for character in Phone:
-                if not character.isdigit():
-                    raise ValueError("You can only enter numbers")
-            if not 5 <= len(Email) <= 250:
-                raise ValueError("Please enter an email address between 5 and 250 character")
-            if not Email.count("@") == 1:
-                raise ValueError("You might have forgot to add @ or add more than one @")
-            if not Email.count(".com") == 1:
-                raise ValueError("You might have forgot to add a dot or added more than one dot")
-            Email = Email.strip() #the strip() method is used for the benefit of the user by aiding in removing the leading spaces if there were any at the beginning of the sentence. It is also used to remove trailing spaces if there were any at the end of the sentence. 
-            Email = Email.replace(" ","") #the replace() method is used for the benefit of the user by aiding in removing the spaces in the middle between words. So in case the user has added a space by mistake, the program is going to automatically remove it without raising an error.  
-            validEmailInputs = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz@0123456789."
-            for char in Email:
-                if char not in validEmailInputs:
-                    raise ValueError("You can only enter alphabetical letters, numbers, a @, and a dot.")
+            customer = Customer(Name, Phone, Email) #validation runs in the Customer setters
+        except (TypeError, ValueError) as error:
+            messagebox.showerror("Error", str(error))
+            return
 
-             
-            if Name and Phone and Email: #if name, Phone, and Email are not empty then do the following: 
-                customer = Customer(Name, Phone, Email) #create a customer object and call it, customer. 
-                self._customers.append(customer) #add the created customer to the list customers 
-                self.updatingCustomerDropDown() #call the function updatingCustomerDropDown
-                """
-                The updatingCustomerDropDown function is called to refresh the Combobox, so that when 
-                the combobox is used, then the created customer/s that was added would appear ther in the combobox 
-                """
-                messagebox.showinfo("Success", f"Customer {Name} added!") #displaying a pop-up message, informing the user the customer has been successfully added 
-                self.customerInputWindow.destroy() #closint the window for the customer input form
-            else: #if there is a value error in name, Phone, or Email is empty then do the following:
-                messagebox.showerror("Error", "Click OK to fill in all customer details.") #dsiplaying a message informing the user that the customer input widget is empty
-        except ValueError: #if there is a value error in bookNamed, author, or price then do the following:
-            messagebox.showerror("Error", "Invalid Input. Please check your inputs and enter a valid input.") #dsiplaying a message informing the user that the stock input is not valid
+        self._customers.append(customer) #add the created customer to the list customers 
+        self.updatingCustomerDropDown() #call the function updatingCustomerDropDown
+        """
+        The updatingCustomerDropDown function is called to refresh the Combobox, so that when 
+        the combobox is used, then the created customer/s that was added would appear ther in the combobox 
+        """
+        messagebox.showinfo("Success", f"Customer {Name} added!") #displaying a pop-up message, informing the user the customer has been successfully added 
+        self.customerInputWindow.destroy() #closint the window for the customer input form
 
 
 
@@ -260,46 +240,22 @@ class UserInterface:
     
 
     def addBook(self):
-        bookNamed = self.bookNameEntry.get() #getting from the entry variable bookNameEntry, it's value, and assigning this valaue to the variable bookNamed
-        author = self.authorEntry.get() #getting from the entry variable authorEntry, it's value, and assigning this valaue to the variable author
+        bookNamed = self.bookNameEntry.get().strip() #getting from the entry variable bookNameEntry, it's value, and assigning this valaue to the variable bookNamed
+        author = self.authorEntry.get().strip() #getting from the entry variable authorEntry, it's value, and assigning this valaue to the variable author
         priced = self.priceEntry.get().strip() #getting from the entry variable priceEntry, it's value, and assigning this valaue to the variable priced
-        priced = str(priced).replace(" ","") #removing any spaces that user might accidently add when entering the price 
         try:
-            price = float(priced)  #assigning this valaue to the variable price after being converted to a float
-            if price < 0:
-                raise ValueError("The price have to be more than 0")
-            if not 4 <= len(str(price)) <= 15:
-                raise ValueError("price length needs to be adjusted")
-            if len(str(price).split('.')[1]) < 2: 
-                raise ValueError("The price should only include tenths and hundredths places") #It's common in most stores that prices look like this 7.56 
-            if str(price).count(".") != 1:
-                raise TypeError("YYou might have forgot to add a dot or added more than one dot")
-            validAuthorNameInputs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ .'-èéüçñabcdefghijklmnopqrstuvwxyz"
-            for letter in author:
-                if letter not in validAuthorNameInputs:
-                    raise ValueError("You can only enter alphabetical letters and some special characters")
-            if not 3 <= len(author) <= 30:
-                raise ValueError("Please enter a name between 3 and 30 character")
-            validBookNameInputs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ' -.abcdefghijklmnopqrstuvwxyz1234567890"
-            for letter in bookNamed: 
-                if letter not in validBookNameInputs:
-                    raise ValueError("You can only enter alphabetical letters, numbers, spaces, hyphens, dots, and apostrophes.")
-            if not 3 <= len(bookNamed) <= 150:
-                raise ValueError("Please enter a book name between 3 and 150 character")
-            if bookNamed and author and price: #if bookNamed, author, and price are not empty then do the following:
-                stock = Stock(bookNamed, author, price) #create a stock object and call it, stock. 
-                self._stocks.append(stock) #add the created stock to the list stocks 
-                self.updateStockDropDown() #call the function updateStockDropDown
-                messagebox.showinfo("Success", f"Book {bookNamed} added!")
-                """
-                The updatingCustomerDropDown function is called to refresh the dropdown, so that when 
-                the dropdown is used, then the created stock/s that was added would appear in the dropdown 
-                """
-                self.add_book_window.destroy() #close the window for the stock input form
-            else: #if bookNamed, author, or price is empty then do the following:
-                messagebox.showerror("Error", "Click OK to fill in all book details.") #dsiplaying a message informing the user that the stock input widget is empty
-        except ValueError: #if there is a value error in bookNamed, author, or price then do the following:
-            messagebox.showerror("Error", "Invalid Input. Please check your inputs and enter a valid input.") #dsiplaying a message informing the user that the stock input is not valid
+            stock = Stock(bookNamed, author, priced) #validation runs in the Stock setters
+        except (TypeError, ValueError) as error:
+            messagebox.showerror("Error", str(error))
+            return
+        self._stocks.append(stock) #add the created stock to the list stocks 
+        self.updateStockDropDown() #call the function updateStockDropDown
+        messagebox.showinfo("Success", f"Book {bookNamed} added!")
+        """
+        The updateStockDropDown function is called to refresh the dropdown, so that when 
+        the dropdown is used, then the created stock/s that was added would appear in the dropdown 
+        """
+        self.add_book_window.destroy() #close the window for the stock input form
 
 
 
@@ -358,10 +314,14 @@ class UserInterface:
             
             
         if customer and stock:
+            if self._current_order is not None:
+                self._clear_open_shipment()
+                if self._current_order in self._orders:
+                    self._orders.remove(self._current_order)
             order = Order(customer, stock) #creating an order of customer and stock, and adding it to the list
             self._orders.append(order) #adding an order to the orders list each time an order is placed by pressing the order placement button
-            messagebox.showinfo("Order Placed", f"Order has been successfully placed for {customerNAme} for the purshase of {stockBookNAme}.") #displaying a message informing the user that they have succefullyy placed the order, and the messagebox also displays the customer name and the book name
-            self.placeOrderBbutton.config(state=tk.DISABLED) #disabling the order button after an order is placed in order to avoid placing multiple orders without first calculating the shipping of the placed order 
+            self._current_order = order
+            messagebox.showinfo("Order Placed", f"Order has been successfully placed for {customerNAme} for the purchase of {stockBookNAme}. Choose shipping options next.") #displaying a message informing the user that they have succefullyy placed the order, and the messagebox also displays the customer name and the book name 
 
 
 
@@ -369,54 +329,19 @@ class UserInterface:
 
 
     def calculateShipping(self):
-        CustomerNAMe = self.dropDown1.get() #getting and assigning the choosen customer from the dropdown to the variable CustomerNAMe
-        StockBookNAMe = self.dropDown2.get() #getting and assigning the selected stock from the dropdown to the variable StockBookNAMe
         urgentShipping = self.isUrgent.get() #using the getter to get the boolean value of the variable isUrgent
 
+        if self._current_order is None:
+            messagebox.showwarning("Error", "Place an order before calculating shipping.")
+            return
 
-
-
-        """Searching for a customer"""
-        customer = None #assigning the variable customer to None 
-        for CUSTOMER in self._customers: #iterating through the list of customers 
-            if CUSTOMER._name == CustomerNAMe: #if the selected customer name is found in the list of customers, then perform the following.
-                customer = CUSTOMER #assign the value of the selection to the variable customer
-                self.labelTracker1.config(text="Thanks for selecting an option") #overwriting the labeltracker for the customer dropdown, informing the user that he has made an option when the place the calculate shipping button is clicked 
-                break #exitting the for loop once the customer selected is found
-
-        
-        """searching for a stock"""
-        stock = None #assigning the variable stock to None 
-        for STOCK in self._stocks: #iterating through the list of books in stocks
-            if STOCK._bookName == StockBookNAMe: #if the selected book name is found in the list of stocks, then perform the following.
-                stock = STOCK #assign the value of the selection to the variable stock
-                self.labelTracker2.config(text="Thanks for selecting an option") #overwrite the labeltracker for the stock dropdown, informing the user that he has made an option when the place the calculate shipping button is clicked 
-                break #exitting the for loop once the book selected is found
-
-
-        if not customer: #in case the variable customer is empty and still assigned to None, then perform the following:
-            self.labelTracker1.config(text="go back and select an item from the customer list!") #overwriting the labeltracker for the customer dropdown, informing the user that a choice needs to be made for the customer dropdown 
-            
-    
-        if not stock: #in case the variable stock is empty and still assigned to None, then perform the following:
-            self.labelTracker2.config(text="go back and select an item from the stock list!") #overwriting the labeltracker for the stock dropdown, informing the user that a choice needs to be made for the stock dropdown 
-
-    
-        if customer and stock:
-            order = Order(customer, stock) #creating an object of the order class each time an order is placed by pressing the place the generate invoice button
-            self._orders.append(order) #adding an order to the orders list each time an order is placed by pressing the order generate invocie button
-
-            shipping = Shipping(order, datetime.date.today()) #creating an instance shipping of the shipping class each time an order is placed by pressing the invoice generation button
-            
-            shippingCOst = shipping.calc_ship_cost(urgentShipping) #assigning the shippingCOst variable to the the boolean value of the variable urgentShipping
-            shipping.set_ship_cost(shippingCOst) #setting the shipping cost to £5.45 or £3.95 according to the the boolean value of the variable urgentShipping, which returns £5.45 if True and stores it in the variable shippingCOst
-
-            totalCost = stock._price + shippingCOst #assiging the value of the sum of the book price and the shipping cost to the variable totalCost
-            messagebox.showinfo("Shipping Calculated", f"Total price for {StockBookNAMe} is going to be ${totalCost:.2f} including shipping") #displaying a message informing the user that of the total cost of the order for book they bought
-            self.selectShippingWindow.destroy() #closing the shippping options window 
-
-
-            self.placeOrderBbutton.config(state=tk.NORMAL) #returning the place order button back to normal, so thaat the user can press it again after the user have calculated the previously placed order
+        if self._current_shipping is None:
+            self._current_shipping = Shipping(self._current_order, datetime.date.today())
+        shippingCOst = self._current_shipping.calc_ship_cost(urgentShipping) #£5.45 when urgent, otherwise £3.95, stored on this shipment
+        stock = self._current_order._stock
+        totalCost = float(stock._price) + float(shippingCOst)
+        messagebox.showinfo("Shipping Calculated", f"Shipping is £{float(shippingCOst):.2f}. Total price for {stock._bookName} is £{totalCost:.2f} including shipping.")
+        self.selectShippingWindow.destroy() #closing the shippping options window
         
 
         
@@ -429,73 +354,52 @@ class UserInterface:
 """
 
     def search(self):
-        entryNUM = self.searchEntry.get() #assigning the inputted ID by the user to the variable entryNUM
+        entryNUM = self.searchEntry.get().strip() #assigning the inputted ID by the user to the variable entryNUM
 
         if not entryNUM: #if the user is clicking the search button before enterring an invoice ID, the following messagebox will be displayed 
             messagebox.showinfo("Error", "There seems to be no invoice ID entered by user") #displaying a pop-up message, informing the user there was no invoice number inputed
+            return
 
-        for everyINVOICE in self.bookstore.invoices: #iterating over every invoice in the invoices list
-            if everyINVOICE._invoice_nbr == entryNUM: #if the inputted ID by the user is equal to the ID of an invoice in the invoices list then the messagebox will be displayed
-                messagebox.showinfo("Result found", f"Invoice Number: {everyINVOICE._invoice_nbr}, \n Total cost: £{everyINVOICE.invoice():.2f}") #the messagebox will display the invoice ID and the total cost
-                self.searchWindow.destroy() #closing the search window 
-                break #if the invoice ID in the list is equal to the entered invoice ID, then after displaying the messagebox result found, terminate
-        if everyINVOICE._invoice_nbr != entryNUM: #checking if the inputted ID by the user in does not equal to the ID of an invoice in the invoices list then the another messagebox will be displayed
-            messagebox.showerror("Result not found", "The invoice number that you are looking for is no where to be found, please check your number and try again. For Reference: INV0001, it should look somthing like this. Make Sure to capitalize your letters") #displaying a pop-up message, all string, informing the user that the inputted ID is not found
+        results = self.bookstore.search_invoice(entryNUM) #search the invoice repository
+        if not results:
+            messagebox.showerror("Result not found", "The invoice number that you are looking for is nowhere to be found, please check your number and try again. For reference: INV0001. Make sure to capitalize your letters.")
+            return
+        everyINVOICE = results[0]
+        messagebox.showinfo("Result found", f"{everyINVOICE}") #the messagebox shows the invoice, including shipping
+        self.searchWindow.destroy() #closing the search window
 
 
         
 
     def invoiceGeneration(self): 
-        CustomerNAME = self.dropDown1.get() #getting and assigning the choosen customer from the dropdown to the variable CustomerNAME
-        StockBookNAME = self.dropDown2.get() #getting and assigning the selected stock from the dropdown to the variable StockBookNAME
-        urgentShipping = self.isUrgent.get() #using the getter to get the boolean value of the variable isUrgent
+        if self._current_order is None:
+            messagebox.showwarning("Error", "Place an order before generating an invoice.")
+            return
+        if self._current_shipping is None:
+            messagebox.showwarning("Error", "Calculate shipping before generating an invoice.")
+            return
 
+        order = self._current_order
+        shipping = self._current_shipping
+        invoice_number = f"INV{len(self.bookstore.invoices) + 1:04d}" 
+        """
+        the f string takes the string INV and the string value inside the curcly braces, 
+        and then the string value of f sting is assigned to the variable invoice_number 
+        using the len() method to count how many invoice are in the invoices list,
+        the curly braces take the integer value of the number of values inside the list, 
+        and incremented by 1, and as I am specifying the it has to be a four digit number, 
+        so if it is less than one thousand(1000), the rest will be filled withinvoice zero as instance: 0999 or 0013
+        """
 
-
-        """Searching for a customer"""
-        customer = None #assigning the variable customer to None 
-        for CUSTOMER in self._customers: #iterating through the list of customers 
-            if CUSTOMER._name == CustomerNAME: #if the selected customer name is found in the list of customers, then perform the following.
-                customer = CUSTOMER #assign the value of the selection to the variable customer 
-                break #exitting the for loop once the customer selected is found
-
-        
-        """searching for a stock"""
-        stock = None #assigning the variable stock to None 
-        for STOCK in self._stocks: #iterating through the list of books in stocks 
-            if STOCK._bookName == StockBookNAME: #if the selected book name is found in the list of stocks, then perform the following.
-                stock = STOCK #assign the value of the selection to the variable stock 
-                break #exitting the for loop once the book selected is found
-
-
-        if not customer: #in case the variable customer is empty and still assigned to None, then perform the following:
-            messagebox.showwarning("Error", "please select a customer") #displaying a message informing the user that a customer needs to be selected 
-            
-        if not stock: #in case the variable stock is empty and still assigned to None, then perform the following:
-            messagebox.showwarning("Error", "please select a book from the stock") #displaying a message informing the user that a stock needs to be selected 
-            
-
-        if customer and stock:
-            order = Order(customer, stock) #creating an object of the order class each time an order is placed by pressing the place the generate invoice button
-            self._orders.append(order) #adding an order to the orders list each time an order is placed by pressing the order generate invocie button
-
-            shipping = Shipping(order, datetime.date.today()) #creating an instance shipping of the shipping class each time an order is placed by pressing the invoice generation button
-            shippingCOst = shipping.calc_ship_cost(urgentShipping) #assigning the shippingCOst variable to the the boolean value of the variable urgentShipping
-            shipping.set_ship_cost(shippingCOst) #setting the shipping cost to £5.45 or £3.95 according to the the boolean value of the variable urgentShipping, which returns £5.45 if True and stores it in the variable shippingCOst
-
-            invoice_number = f"INV{len(self.bookstore.invoices) + 1:04d}" 
-            """
-            the f string takes the string INV and the string value inside the curcly braces, 
-            and then the string value of f sting is assigned to the variable invoice_number 
-            using the len() method to count how many invoice are in the invoices list,
-            the curly braces take the integer value of the number of values inside the list, 
-            and incremented by 1, and as I am specifying the it has to be a four digit number, 
-            so if it is less than one thousand(1000), the rest will be filled withinvoice zero as instance: 0999 or 0013
-            """
-
-            invoice = Invoice(invoice_number, order._stock, shipping) #creating an instance invoice of the Invoice class each time a valid the invoice generation is called by pressing the invoice generation button
-            self.bookstore.invoices.append(invoice) #adding an invoice to the invoices list each time a valid the invoice generation is called by pressing the invoice generation button
-            messagebox.showinfo("Generation of an Invoice", f"An invoice {invoice_number} has been successfully generated. Total Cost: £{invoice.invoice():.2f}") #displaying a pop-up message ro the screen, informating the user of the successful generation of an invoice each time a valid the invoice generation is called by pressing the invoice generation button
+        invoice = Invoice(invoice_number, order._stock, shipping) #the invoice uses the order that was placed and the shipping cost already calculated
+        self.bookstore.invoices.append(invoice) #adding an invoice to the invoices list each time a valid the invoice generation is called by pressing the invoice generation button
+        messagebox.showinfo(
+            "Generation of an Invoice",
+            f"An invoice {invoice_number} has been successfully generated.\nShipping: £{float(shipping._ship_cost):.2f}\nTotal Cost: £{invoice.invoice():.2f}",
+        )
+        self._current_order = None
+        self._current_shipping = None
+        self.isUrgent.set(False)
 
 
 
@@ -504,17 +408,15 @@ class UserInterface:
 
     def view_invoices(self):
         if not self.bookstore.invoices: #if the invoices list is empty then do the following: 
-            messagebox.showinfo("Not found", "There is no invoice avaliable in the invoices list") #displaying a pop-up message, informing the user there was no invoice found in the invoices list 
+            messagebox.showinfo("Not found", "There is no invoice available in the invoices list") #displaying a pop-up message, informing the user there was no invoice found in the invoices list 
+            return
 
-        allInvoices = "" #an empty string to store the values added to it 
-        for everyInvoice in self.bookstore.invoices: #iteraring over every invoice in the invoice list that was created in the BookStore class
-                allInvoices += f"\n The invoice with ID: {everyInvoice.get_invoice_nbr} costs {everyInvoice.invoice():.2f}\n" #adding each invoice to the variable allInvoices to be stored
-        
-        if self.bookstore.invoices: #if the invoices list is not empty then do the following: 
-            messagebox.showinfo("All Invoices", allInvoices) #displaying a pop-up message to the screen that displays the invoices with details: an invoice number and the total cost
+        allInvoices = "\n\n".join(str(everyInvoice) for everyInvoice in self.bookstore.invoices)
+        messagebox.showinfo("All Invoices", allInvoices) #displaying a pop-up message to the screen that displays the invoices with details: an invoice number and the total cost
             
 
 
 if __name__ == "__main__":
     #calling the main funtion
     userInterface = UserInterface()
+    userInterface.root.mainloop()

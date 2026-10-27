@@ -7,11 +7,37 @@ name: the person's name
 phone: the person's phone number 
 email: the person's email address 
 """
+
+import datetime
+import re
+from decimal import Decimal
+
+
+def _parse_price(validPrice):
+    """Return a price as a float with at most two decimal places."""
+    if isinstance(validPrice, str):
+        text = validPrice.strip().replace(" ", "")
+        if not re.fullmatch(r"\d+(\.\d{1,2})?", text):
+            raise ValueError("The price should only include tenths and hundredths places")
+        amount = Decimal(text)
+    elif isinstance(validPrice, bool) or not isinstance(validPrice, (int, float)):
+        raise TypeError("You should enter a decimal number")
+    else:
+        amount = Decimal(str(validPrice))
+        rounded = amount.quantize(Decimal("0.01"))
+        if abs(amount - rounded) > Decimal("0.0000001"):
+            raise ValueError("The price should only include tenths and hundredths places")
+        amount = rounded
+    if amount <= 0:
+        raise ValueError("The price have to be more than 0")
+    return float(amount.quantize(Decimal("0.01")))
+
+
 class Person: #creating the person class
     def __init__(self, name: str, phone: str, email: str): #the __init__ function takes 3 attributes, and all of them are string attributes 
-        self._name = name #creating a variable that can be passed into an object of the class
-        self._phone = phone #creating a variable that can be passed into an object of the class
-        self._email = email #creating a variable that can be passed into an object of the class
+        self.Name = name
+        self.Phone = phone
+        self.Email = email
 
 
     """
@@ -102,122 +128,14 @@ person10.getemail() #the output will be: Jakey@gmail.com
 
 
 
-"""
-The following Customer class inherits the attributies: name, phone, and email from the class Person
 
-The Customer class is going to represent a customer with
-a name, a phone number, and an email
-
-(name, phone, email) -> str
-name: the customer's name 
-phone: the customer's phone number 
-email: the customer's email address 
 """
-class Customer(Person): #creating the Customer class 
+The following Customer class inherits name, phone, and email from Person.
+A customer is a person who orders books.
+"""
+class Customer(Person):
     def __init__(self, name: str, phone: str, email: str):
-        #inheriting the attributies: name, phone, and email from the class Person
-        Person.__init__(self, name, phone, email)
-
-        """
-The following access the attributes of the person and returns 
-them when called using getters for each attribute 
-for example:
-person10 = Person("Jakey", "07456789123", "Jakey@gmail.com")
-person10.getemail() #the output will be: Jakey@gmail.com
-    """
-    def getname(self):
-        """
-        returning the person name
-        (person name --> str)
-        """
-        return self._name
-
-    
-    def getphone(self): 
-        """
-        returning the person phone number
-        (person phone number --> str)
-        """
-        return self._phone
-    
-    def getemail(self):
-        """
-        returning the person email address
-        (person email address --> str)
-        """
-        return self._email 
-    
-    def setName(self, validName):
-        if not isinstance(validName, str):
-            raise TypeError("You need to add quotes before and after the name, because names must be written as a string")
-        validNameInputs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ .'-èéüçñabcdefghijklmnopqrstuvwxyz"
-        for letter in validName:
-            if letter not in validNameInputs:
-                raise ValueError("You can only enter alphabetical letters and some special characters")
-        if not 3 <= len(validName) <= 30:
-            raise ValueError("Please enter a name between 3 and 30 character")
-        
-        print("Calling the name setter...")     
-        self._name = validName #assigning the value to the private attribute (_name) inside the setter, without triggering the setter itself again. The private attribute (_name) stores the actual value, and the setter is just used for validation. I am doing that to avoid an infinite recersion that leads to RecursionError.
-
-    
-    def setPhone(self, phoneNumber):
-        if not isinstance(phoneNumber, str):
-            raise TypeError("You need to add quotes before and after the Phone number, because phone numbers must be written as a string")
-        if not len(phoneNumber) == 11:
-            raise ValueError("Please enter an 11 digit phone number")
-        if not phoneNumber.startswith("07"):
-            raise ValueError("phonenumber must start with 07")
-        for character in phoneNumber:
-            if not character.isdigit():
-                raise ValueError("You can only enter numbers")
-                   
-        print("Calling the phone setter...")
-        self._phone = phoneNumber
-
-
-    def setEmail(self, validEmailAddress):
-        if not isinstance(validEmailAddress, str):
-            raise TypeError("You need to add quotes before and after the email address, because email addresses must be written as a string")
-        if not 5 <= len(validEmailAddress) <= 250:
-                raise ValueError("Please enter an email address between 5 and 250 character")
-        if validEmailAddress.count("@") != 1:
-            raise TypeError("You might have forgot to add @ or add more than one @")
-        if validEmailAddress.count(".") != 1:
-            raise TypeError("You might have forgot to add a dot or add more than one a dot")
-        validEmailAddress = validEmailAddress.strip() #the strip() method is used for the benefit of the user by aiding in removing the leading spaces if there were any at the beginning of the sentence. It is also used to remove trailing spaces if there were any at the end of the sentence. 
-        validEmailAddress = validEmailAddress.replace(" ","") #the replace() method is used for the benefit of the user by aiding in removing the spaces in the middle between words. So in case the user has added a space by mistake, the program is going to automatically remove it without raising an error.  
-        validEmailInputs = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz@0123456789."
-        for char in validEmailAddress:
-            if char not in validEmailInputs:
-                raise ValueError("You can only enter alphabetical letters, numbers, a @, and a dot.")
-        
-        print("Calling the email setter...")
-        self._email = validEmailAddress
-
-
-    Name = property(getname, setName)
-    Phone = property(getphone, setPhone)
-    Email = property(getemail, setEmail)
-
-
-    
-
-
-
-    
-    
-
-
-
-
-
-
-
-
-
-
-
+        super().__init__(name, phone, email)
 
 
 
@@ -234,8 +152,8 @@ price: the price of the product
 class Product:
     #the __init__ function takes 3 attributes (2 of them are strings, and one is a float variable)
     def __init__(self, book_name: str, price: float):
-        self._bookName = book_name #creating a variable that can be passed into an object of the class
-        self._price = price #creating a variable that can be passed into an object of the class
+        self.BookName = book_name
+        self.Price = price
 
     
         """
@@ -269,41 +187,10 @@ stock10.getauthor() #the output will be: C.S. Lewis
 
     def setprice(self, validPrice):
         """
-        checking if validPrice is a float
-        if it is not then raise an error 
+        Store the book price as a float with at most two decimal places.
         """
-        if not isinstance(validPrice, float):
-            raise TypeError("You should enter a decimal number") #adjusting it to two decimal place because in most stores it is common to have prices that look like this 7.55 like this 7.90 or 7.50 or 1.50
-        """
-        ensuring that validPrice is not less than 
-        if it is less then raise an error 
-        """
-        if validPrice < 0:
-            raise ValueError("The price have to be more than 0")
-        """
-        checking if the length of validPrice is betwween 4 and 15
-        if not then raise an error
-        """
-        if not 4 <= len(str(validPrice)) <= 15:
-            raise ValueError("price length needs to be adjusted")
-        """
-        adjusting it to two decimal place because in most stores it is common to have prices that look like this 7.56
-        if it more than 2 decimal places then raisse an error 
-        """
-        if len(str(validPrice).split('.')[1]) < 2: 
-            raise ValueError("The price should only include tenths and hundredths places") 
-        #removing every empty space 
-        validPrice = str(validPrice).replace(" ","")
-        """
-        ensuring that validPrice has exactly one dot  
-        if it does not then raise an error 
-        """
-        if str(validPrice).count(".") != 1:
-            raise TypeError("You might have forgot to add a dot or added more than one dot")
-
         print("Calling the price setter...")
-        self._price = validPrice
-
+        self._price = _parse_price(validPrice)
 
 
     def setbookName(self, validBookName):
@@ -342,115 +229,12 @@ stock10.getauthor() #the output will be: C.S. Lewis
 
 
 """
-The following Stock class inherits the attributies: book name, and price from the class Product
-
-The Stock class is going to represent a stock with
-a book Name and a price
-
-(bookName, author) -> str
-(price) --> Double float
-bookName: the name of the book
-price: the price of the product
+The Stock class inherits book name and price from Product and adds the author.
 """
-class Stock: #creating the Customer class 
+class Stock(Product):
     def __init__(self, bookName: str, author: str, price: float):
-        #inheriting the attributies: bookName, and email from the class Person
-        Product.__init__(self, bookName, price)
-        self._author = author #creating a variable that can be passed into an object of the class
-
-    """
-    The following access the attributes of the stock and returns 
-    them when called using getters for each attribute 
-    for example:
-    stock10 = Stock("The Lion, the Witch and the Wardrobe", "C.S. Lewis", 11.46)
-    stock10.getauthor() #the output will be: C.S. Lewis
-    """
-    def getbookName(self):
-        """
-        returning the bookName in the Stock class
-        (stock bookName --> str)
-        """
-        return self._bookName.strip() 
-    """
-    strip() method is used to remove leading spaces if there 
-    were any at the beginning of the book name. It is also used to 
-    remove trailing spaces if there were any at the end of the book name
-    """
-
-
-    
-    def getprice(self):
-        """
-        returning the price in the Stock class
-        (stock price --> str)
-        """
-        return self._price
-    
-
-    def setprice(self, validPrice):
-        """
-        checking if validPrice is a float
-        if it is not then raise an error 
-        """
-        if not isinstance(validPrice, float):
-            raise TypeError("You should enter a decimal number") #adjusting it to two decimal place because in most stores it is common to have prices that look like this 7.55 like this 7.90 or 7.50 or 1.50
-        """
-        ensuring that validPrice is not less than 
-        if it is less then raise an error 
-        """
-        if validPrice < 0:
-            raise ValueError("The price have to be more than 0")
-        """
-        checking if the length of validPrice is betwween 4 and 15
-        if not then raise an error
-        """
-        if not 4 <= len(str(validPrice)) <= 15:
-            raise ValueError("price length needs to be adjusted")
-        """
-        adjusting it to two decimal place because in most stores it is common to have prices that look like this 7.56
-        if it more than 2 decimal places then raisse an error 
-        """
-        if len(str(validPrice).split('.')[1]) < 2: 
-            raise ValueError("The price should only include tenths and hundredths places") 
-        #removing every empty space 
-        validPrice = str(validPrice).replace(" ","")
-        """
-        ensuring that validPrice has exactly one dot  
-        if it does not then raise an error 
-        """
-        if str(validPrice).count(".") != 1:
-            raise TypeError("You might have forgot to add a dot or added more than one dot")
-
-        print("Calling the price setter...")
-        self._price = validPrice
-
-
-
-    def setbookName(self, validBookName):
-        """
-        checking if validBookName is a string
-        if it is not then raise an error 
-        """
-        if not isinstance(validBookName, str): 
-            raise TypeError("You need to add quotes before and after the book name, because book name must be written as a string")
-        validBookNameInputs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ' -.abcdefghijklmnopqrstuvwxyz1234567890"
-        """
-        checking if every letter in validBookName is inisde validBookNameInputs
-        if not then raise an error 
-        """
-        for letter in validBookName: 
-            if letter not in validBookNameInputs:
-                raise ValueError("You can only enter alphabetical letters, numbers, spaces, hyphens, dots, and apostrophes.")
-            """
-            checking if the length of validBookName is betwween 3 and 150
-            if not then raise an error
-            """
-        if not 3 <= len(validBookName) <= 150:
-            raise ValueError("Please enter a book name between 3 and 150 character")
-        print("Calling the book_name setter...")
-        self._bookName = validBookName #assigning the value to the private attribute (book_name) inside the setter, without triggering the setter itself again. The private attribute (book_name) stores the actual value, and the setter is just used for validation. I am doing that to avoid an infinite recersion that leads to RecursionError.
-
-
+        super().__init__(bookName, price)
+        self.Author = author
 
     def getauthor(self): 
         """
@@ -478,16 +262,13 @@ class Stock: #creating the Customer class
         self._author = validAuthor #assigning the value to the private attribute (_author) inside the setter, without triggering the setter itself again. The private attribute (_author) stores the actual value, and the setter is just used for validation. I am doing that to avoid an infinite recersion that leads to RecursionError.
 
 
-    BookName = property(getbookName, setbookName) #creating the property method for the book name
-    Price = property(getprice, setprice) #creating the property method for the price of the stock 
     Author = property(getauthor, setauthor) #creating the property method for the author name
-
 
 
 class Order:
     def __init__(self, customer, stock):
-        self._customer = customer
-        self._stock = stock
+        self.setcustomer(customer)
+        self.setstock(stock)
 
     """
 The following access the attributes of the order and returns 
@@ -505,51 +286,54 @@ order10 = Order(customer10, stock10)
     
     def setcustomer(self, validcustomer):
         print("Calling the self._customer setter...")
-        if self._customer is None:
-            print("Value has not been set yet.")
-            return None
+        if not isinstance(validcustomer, Customer):
+            raise TypeError("Order customer must be a Customer")
         self._customer = validcustomer
 
     
     def setstock(self, validstock):
         print("Calling the self._stock setter...")
-        if self._stock is None:
-            print("Value has not been set yet.")
-            return None
+        if not isinstance(validstock, Stock):
+            raise TypeError("Order stock must be a Stock item")
         self._stock = validstock
 
-        
 
-import datetime 
 class Shipping:
     count_urgent = 0 #craeting a variable inside the class and initializing it, so that it equals to zero
     
     def __init__(self, order, ship_date):
-        self._order = order
+        self._ship_cost = 0.00 #instantiating the shipping cost as a float
+        self._counted_urgent = False
+        self.order = order
         self.ship_date = ship_date
-        self._ship_cost = 0.00 #instantiating the shipping cost as a float 
     
     #creating a method of the class that calculates the shipping cost depending on the time of delivery
     def calc_ship_cost(self, is_urgent: bool):
-        #using if statement so that if shipping is urgent return 5.45 and if shipping is not urgent then return 3.95 
+        #using if statement so that if shipping is urgent return 5.45 and if shipping is not urgent then return 3.95
+        #count_urgent tracks shipments, so changing the same shipment does not count it twice
         if is_urgent == True:
-            #incrementing the count_urgent by 1 each time is_urgent is equal to True
-            Shipping.count_urgent += 1
-        #returning a different price depending on the cost of the shipping
-            return 5.45 #if True
-        else:
-            return 3.95 #if False
+            if not self._counted_urgent:
+                Shipping.count_urgent += 1
+                self._counted_urgent = True
+            self._ship_cost = 5.45
+            return self._ship_cost
+        if self._counted_urgent:
+            Shipping.count_urgent -= 1
+            self._counted_urgent = False
+        self._ship_cost = 3.95
+        return self._ship_cost
 
     def get_ship_cost(self):
         #Calling the ship_cost getter...
         return self._ship_cost
 
     def set_ship_cost(self, validShipCost):
-        if self._ship_cost is None:
-            print("Value has not been set yet.")
-            return None
+        if isinstance(validShipCost, bool) or not isinstance(validShipCost, (int, float)):
+            raise TypeError("Shipping cost must be a number")
+        if validShipCost < 0:
+            raise ValueError("Shipping cost cannot be negative")
         #Calling the ship_cost setter...
-        self._ship_cost = validShipCost
+        self._ship_cost = float(validShipCost)
 
     shippingCost = property(get_ship_cost, set_ship_cost) #creating the property method for the shipping cost  
 
@@ -561,9 +345,8 @@ class Shipping:
     
     @order.setter
     def order(self, validOrder):
-        if self._order is None:
-            print("Value has not been set yet.")
-            return None
+        if not isinstance(validOrder, Order):
+            raise TypeError("Shipping order must be an Order")
         #Calling the order setter...
         print(f"setting order to {validOrder}")
         self._order = validOrder
@@ -576,14 +359,11 @@ class Shipping:
     
     @ship_date.setter
     def ship_date(self, validShipDate):
-        validShipDate = datetime.date.today()
+        if not isinstance(validShipDate, datetime.date):
+            raise TypeError("Ship date must be a date")
         #Calling the ship_date setter...
         print(f"setting ship_date to {validShipDate}")
         self._ship_date = validShipDate
-
-
-
-
 
 
 
@@ -599,11 +379,23 @@ class Invoice:
         self.ship_order = ship_order
         self.total_cost = 0.00 #instantiating the total cost as a float 
     
-    #creating a method of the class that calculates the total cost, which is the summation of the price and shipping cost
+    """
+    creating a method of the class that calculates the total cost, which is the summation of the price and shipping cost
+    """
     def invoice(self):
-        #returning the summation of the follwoing equation, which takes the price and the shipping cost to get the total cost
-        total_cost = self.stock._price + self.ship_order._ship_cost
-        return total_cost
+        self.total_cost = float(self.stock._price) + float(self.ship_order._ship_cost)
+        return self.total_cost
+
+    def __str__(self):
+        total = self.invoice()
+        customer = self.ship_order._order._customer
+        return (
+            f"Invoice {self._invoice_nbr}: {customer._name}, "
+            f"{self.stock._bookName} by {self.stock._author}, "
+            f"book £{float(self.stock._price):.2f}, "
+            f"shipping £{float(self.ship_order._ship_cost):.2f}, "
+            f"total £{total:.2f}"
+        )
     
     
     @property
@@ -614,7 +406,7 @@ class Invoice:
     @property
     def get_total_cost(self):
         #Calling the total_cost getter...
-        return self.total_cost
+        return self.invoice()
     
     @property
     def get_ship_order(self):
@@ -627,29 +419,32 @@ class BookStore:
     #the __init__ function that takes the final message, and instantiating the the invoices as a list 
     def __init__(self, message: str):
         self.message = message
-        self._invoices = []
+        self._invoices = [] #creating an invoices list 
 
-    #Creating a method to allow searching for an invoice by an invoice number
-    def search_invoice(self, searchInput):
-        #creating a list and assigning it to the variable results 
-        results = [] 
-        #creatingg a loop that loops through every invoice in the invoices list
-        for inv in self._invoices:
-            #if the entered invoice number by the user matches one of the invoice numbers of the invoices in the list of invoices, then append the invoice in the invoices list to the results list 
-            if searchInput in inv._invoice_nbr:
-                #appending the invoice in the invoices list to the results list 
-                results.append(inv)
+    """
+    Creating a method to allow searching for an invoice by an invoice number
+    creating a list and assigning it to the variable results 
+    creating a loop that loops through every invoice in the invoices list
+    if the entered invoice number by the user matches one of the invoice numbers of the invoices in the list of invoices, then append the invoice in the invoices list to the results list
+    appending the invoice in the invoices list to the results list  
+    """
+    def search_invoice(self, searchInput): #Creating a method to allow searching for an invoice by an invoice number
+        results = [] #creating a list and assigning it to the variable results 
+        for inv in self._invoices: #creatingg a loop that loops through every invoice in the invoices list
+            if inv._invoice_nbr == searchInput: #exact invoice number match
+                results.append(inv) #appending the invoice in the invoices list to the results list
         """
         checking if results is not empty 
         if the results list is not empty then for the invoice in the results list, print it in the terminal below using the following print(invoice)
         if the results list is empty then using the print statement, display no results found
         """
         #checking if results is not empty    
-        if results:
-            for invoice in results: 
-                print(invoice) 
-        else:
-            print("no results found")
+        if results: #if results is not empty do the following loop through results list and print the invoice in the list 
+            for invoice in results: #loop through results list
+                print(invoice) #print the invoice in the list 
+        else: #if the results list is empty then print the following
+            print("no results found") #displaying and informing the user that no result has been found
+        return results
 
     @property 
     def invoices(self):
@@ -658,81 +453,32 @@ class BookStore:
 
 
 class Test:
+    @staticmethod
     def main():
-
-        try:
-            nameOfCustomer = str(input("Enter the name of the customer: ")).strip() #taking an input from the user and assigning it to the variable nameOfCustomer
-            if not isinstance(nameOfCustomer, str): #checking if nameOfCustomer is a string
-                print("A name should be written as a string") #if not then print
-                #nameOfCustomer = str(input("Enter the name of the customer: ")).strip() #if we want to stop the programm until the user adds a correct customer name format, we can this line of code asking the user to input the name again after explaining to the user what went wrong
-            validNameInputs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ .'-èéüçñabcdefghijklmnopqrstuvwxyz"
-            """
-            checking if every letter in nameOfCustomer is inisde validNameInputs
-            if not then print 
-            """
-            for letter in nameOfCustomer: 
-                if letter not in validNameInputs: #ensuring that each character in nameOfCustomer is is not outside validNameInputs
-                    print("A name should consist of alphabetical letters and somtimes if needed some special characters") #if it is outside then print
-                    #nameOfCustomer = str(input("Enter the name of the customer: ")).strip() #if we want to stop the programm until the user adds a correct customer name format, we can this line of code asking the user to input the name again after explaining to the user what went wrong
-            if not 3 <= len(nameOfCustomer) <= 30: #checking if the length of nameOfCustomer is betwween 3 and 30
-                print("A name should be between 3 and 30 character") #if not then print
-                #nameOfCustomer = str(input("Enter the name of the customer: ")).strip() #if we want to stop the programm until the user adds a correct customer name format, we can this line of code asking the user to input the name again after explaining to the user what went wrong
-        except Exception: #if there is an exception then print
-            print("Please, Enter the customer name again") #informing the user to enter the input again 
-
-        try:
-            phoneOfCustomer = str(input("Enter the phone number of the customer: ")).strip() #taking an input from the user and assigning it to the variable phoneOfCustomer
-            if not isinstance(phoneOfCustomer, str): #checking if phoneNumber is a string
-                print("A phone number should be written as a string") #if it is not then print 
-            if not len(phoneOfCustomer) == 11: #checking if phoneOfCustomer is an 11 digit number 
-                print("A phone number should be written as 11 digit phone number") #if it is not then print 
-            if not phoneOfCustomer.startswith("07"): #checking if phoneOfCustomer starts with 07 
-                print("A phone number should be written as a phone number that starts with 07") #if it is not then print 
-            for character in phoneOfCustomer:
-                if not character.isdigit(): #ensuring that each character in phoneOfCustomer is a digit 
-                    print("A phone number should be written as digits only") #if it is not then print 
-        except Exception: #if there is an exception then print
-            print("Please, Enter the customer phone number again") #informing the user to enter the input again 
-
-
-        try:
-            emailOfCustomer = str(input("Enter the email address of the customer: ")).strip() #taking an input from the user and assigning it to the variable emailOfCustomer
-            if not isinstance(emailOfCustomer, str): #checking if emailOfCustomer is a string
-                print("An email address should be written as a string") #if it is not then print 
-            if not 5 <= len(emailOfCustomer) <= 250: #checking if the length of validEmailAddress is betwween 5 and 250
-                    print("An email address should be written between 5 and 250 character") #if it is not then print 
-            if emailOfCustomer.count("@") != 1: #checking if validEmailAddress is written with exactly one @(At sign)
-                print("An email address should be written with exactly one @(At sign). So you might have forgot to add @ or add more than one @") #if it is not then print 
-            if emailOfCustomer.count(".") != 1: #checking if validEmailAddress is written with exactly one dot
-                print("An email address should be written with exactly one dot. So you might have forgot to add a dot or add more than one a dot") #if it is not then print 
-            emailOfCustomer = emailOfCustomer.strip() #the strip() method is used for the benefit of the user by aiding in removing the leading spaces if there were any at the beginning of the sentence. It is also used to remove trailing spaces if there were any at the end of the sentence. 
-            emailOfCustomer = emailOfCustomer.replace(" ","") #the replace() method is used for the benefit of the user by aiding in removing the spaces in the middle between words. So in case the user has added a space by mistake, the program is going to automatically remove it without raising an error.  
-            validEmailInputs = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz@0123456789."
-            """
-            checking if every letter in emailOfCustomer is inisde validEmailInputs
-            if not then print 
-            """
-            for char in emailOfCustomer:
-                if char not in validEmailInputs: #ensuring that each character in emailOfCustomer is not outside validEmailInputs
-                    print("An email address should only include alphabetical letters, numbers, a @(At sign) and a dot.") #if it is outside then print 
-        except Exception: #if there is an exception then print
-            print("Please, Enter the customer phone number again") #informing the user to enter the input again 
-
-
         """
-        Inputs that raise no error 
+        Inputs that raise no error
         Enter the name of the customer: Adam Fisher
         Enter the phone number of the customer: 07123456789
         Enter the email address of the customer: adamFisher@gmail.com
         """
-        customer1 = Customer(nameOfCustomer, phoneOfCustomer, emailOfCustomer) #creating an instance of the customer class that takes its parameters as inputs from the user 
+        while True:
+            try:
+                nameOfCustomer = input("Enter the name of the customer: ").strip()
+                phoneOfCustomer = input("Enter the phone number of the customer: ").strip()
+                emailOfCustomer = input("Enter the email address of the customer: ").strip()
+                customer1 = Customer(nameOfCustomer, phoneOfCustomer, emailOfCustomer)
+                break
+            except (TypeError, ValueError) as error:
+                print(error)
+                print("Please enter the customer details again")
         customer2 = Customer("Tyler Hoverman", "07456789123", "TylerHoverman@gmail.com") #creating an instance of the customer class
         customer3 = Customer("Mason Green", "07123456789", "MasonGreen@gmail.com") #creating an instance of the customer class
- 
+
  
         stock1 = Stock("Prince Caspian", "C.S. Lewis", 5.78) #creating an instance of the stock class
         stock2 = Stock("Winning the War on Worry", "Louie Giglio", 12.29) #creating an instance of the stock class
         stock3 = Stock("Think Ahead" , "Craig Groeschel", 12.55) #creating an instance of the stock class
+ 
  
         order1 = Order(customer1, stock1) #creating an instance of the order class
         order2 = Order(customer2, stock2) #creating an instance of the order class
@@ -771,5 +517,6 @@ class Test:
 
  
  
-if __name__ == "__main__": #the entry point for the program exceution 
-    Test.main() #calling the main method
+if __name__ == "__main__":
+    #calling the main method
+    Test.main() 
